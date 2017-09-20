@@ -1,0 +1,13 @@
+text8/1k
+time                 18.05 s    (15.93 s .. 19.93 s)
+                     0.998 R²   (0.994 R² .. 1.000 R²)
+mean                 15.64 s    (14.25 s .. 16.40 s)
+std dev              1.215 s    (0.0 s .. 1.309 s)
+variance introduced by outliers: 21% (moderately inflated)
+
+text8/10k
+time                 4127 s     (2310 s .. 5429 s)
+                     0.971 R²   (0.950 R² .. 1.000 R²)
+mean                 3759 s     (3363 s .. 4027 s)
+std dev              402.2 s    (0.0 s .. 464.3 s)
+variance introduced by outliers: 23% (moderately inflated)

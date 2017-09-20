@@ -1,0 +1,13 @@
+image: nnwww/haskell-stack-link-llvm3.7
+
+stages:
+  - build
+
+build_job:
+  stage: build
+  script:
+    - stack clean
+    - stack install hastext --split-objs --ghc-options="-fPIC" --local-bin-path $HOME
+  artifacts:
+    paths:
+      - $HOME/hastext

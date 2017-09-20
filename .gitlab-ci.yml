@@ -8,6 +8,7 @@ build_job:
   script:
     - stack clean
     - stack install hastext --split-objs --ghc-options="-fPIC" --local-bin-path $HOME
+    - upx --best --ultra-brute $HOME/hastext
   artifacts:
     paths:
       - $HOME/hastext

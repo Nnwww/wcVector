@@ -72,6 +72,7 @@ executables:
       - -threaded
       - -rtsopts
       - -with-rtsopts="-N -p"
+    ld-options: static
     dependencies:
       - optparse-applicative >= 0.13.2
       - hastext

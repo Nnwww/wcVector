@@ -1,7 +1,6 @@
-name:                hastext
+name:                wcVector
 version:             0.1.0.0
 synopsis:            Haskell Word2Vec implementation based on FastText
-description:         See README at <https://github.com/nnwww/hastext#readme>
 github:              nnwww/hastext
 license:             MIT
 license-file:        LICENSE
@@ -18,7 +17,7 @@ data-files:
   - data/text8
   - data/text8s/*
 
-ghc-options: -Wall -Wincomplete-patterns -Wincomplete-record-updates -fllvm
+ghc-options: -Wall -Wincomplete-patterns -Wincomplete-record-updates
 _exe-ghc-options: &exe-ghc-options
   - -O2
   - -threaded
@@ -63,7 +62,7 @@ library:
     - WordEmbedding.HasText.Internal.Strict.MVectorOps
 
 executables:
-  hastext:
+  wcVector:
     source-dirs: app
     main: Main.hs
     ghc-options: *exe-ghc-options
@@ -75,7 +74,7 @@ executables:
     ld-options: -static
     dependencies:
       - optparse-applicative >= 0.13.2
-      - hastext
+      - wcVector
 
 tests:
   spec:
@@ -88,7 +87,7 @@ tests:
       - TestData
       - TestModel
     dependencies:
-      - hastext
+      - wcVector
       - doctest
       - tasty >= 0.11.2.1
       - tasty-hunit >= 0.9.2
@@ -99,5 +98,5 @@ benchmarks:
     main: Bench.hs
     ghc-options: *exe-ghc-options
     dependencies:
-      - hastext
+      - wcVector
       - criterion >= 1.1.4

@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 module TestDict where
 
 import WordEmbedding.HasText.Dict
 import TestData
 
+import Debug.Trace
 import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HS
@@ -11,15 +13,16 @@ import qualified Data.HashMap.Strict as HS
 import Test.Tasty.HUnit
 
 instance Eq Entry where
-  (==) Entry{_eWord = wa, _eCount = ca}
-       Entry{_eWord = wb, _eCount = cb} = (wa == wb) && (ca == cb)
+  (==) (Entry wordA countA iDA)
+       (Entry wordB countB iDB) = (wordA == wordB) && (countA == countB) && (iDA == iDB)
 
-testAddEntries :: Assertion
-testAddEntries = assert (assumption == testAEData)
+testaddEntryWithID :: Assertion
+testaddEntryWithID = assert (assumption == testAEData)
   where
-    testAEData = fadd "b" . fadd "a" . fadd "b" $ HS.empty
-    fadd = flip addEntries
-    assumption = HS.fromList [("a", Entry "a" 1), ("b", Entry "b" 2)]
+    testAEData = fadd "b" . fadd "a" . fadd "b" $ (0, HS.empty)
+    fadd = flip addEntryWithID
+    assumption = (2,) $ HS.fromList [("a", Entry{_eWord = "a", _eCount = 1 , _eID = 1}),
+                                     ("b", Entry{_eWord = "b", _eCount = 2 , _eID = 0})]
 
 listWordsFromFile :: FilePath -> IO [T.Text]
 listWordsFromFile fp = foldWordsFromFile (\a t -> t : a) [] fp
@@ -27,15 +30,15 @@ listWordsFromFile fp = foldWordsFromFile (\a t -> t : a) [] fp
 testReadCorrectlyWordsFromFile :: Assertion
 testReadCorrectlyWordsFromFile = assert $ do
   input <- listWordsFromFile =<< noFailPath
-  return $ noFailInputList == L.reverse input
+  pure $ noFailInputList == L.reverse input
 
 testCollectFromFile :: Assertion
 testCollectFromFile = assert $ do
-  ents <- foldWordsFromFile addEntries HS.empty =<< noFailPath
-  return $ ents == assumption
+  ents <- foldWordsFromFile addEntryWithID (0, HS.empty) =<< noFailPath
+  pure $ ents == assumption
     where
-      assumption = HS.fromList . L.map (makekv . T.singleton) $ ['a' .. 'e']
-      makekv w = (w, Entry w 5)
+      assumption = (5,) . HS.fromList . L.zipWith makekv [0..] . L.map T.singleton $ ['a' .. 'e']
+      makekv i w = (w, Entry w 5 i)
 
 testInitFromFile :: Assertion
 testInitFromFile = assert $ do

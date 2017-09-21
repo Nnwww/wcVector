@@ -15,7 +15,7 @@ import           WordEmbedding.HasText
 
 normalUseCase :: Word -> T.Text -> IO HasTextArgs -> ((String -> IO ()) -> Assertion)
 normalUseCase topn posWord args step = do
-  a@(_, HasTextOptions{_input = i, _output = o}) <- args
+  a@HasTextArgs{_input = i, _output = o} <- args
   step $ "input path: "  <> i
   step $ "output path: " <> o
   step "Running train"
@@ -25,7 +25,7 @@ normalUseCase topn posWord args step = do
   step ("Top " <> show topn <> " of mostSimilar: " <> show r)
   step "Running saveModel"
   saveModel w
-  let outputPath = _output . snd . htArgs $ w
+  let outputPath = _output . htArgs $ w
   existanceOutputModel <- SD.doesFileExist outputPath
   assertEqual "save a model" True existanceOutputModel
   step "Running saveVecCompat"
@@ -33,7 +33,7 @@ normalUseCase topn posWord args step = do
   existanceOutputVectorCompat <- SD.doesFileExist (outputPath <> ".vecc")
   assertEqual "Save vectors as a compatible form." True existanceOutputVectorCompat
   step "Running loadModel"
-  Right _ <- loadModel (_output . snd $ a)
+  Right _ <- loadModel (_output a)
   return ()
 
 main :: IO ()
@@ -44,7 +44,7 @@ tests = testGroup "Tests" [unitTests]
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests"
-            [ testCase "addEntries add entries" $ testAddEntries
+            [ testCase "testaddEntryWithID add entries" $ testaddEntryWithID
             , testCase "wordsFromFile read a file" $ testReadCorrectlyWordsFromFile
             , testCase "(wordsFromFile addEntries) collect entries from file" $ testCollectFromFile
             , testCase "testInitFromFile is non zero" $ testInitFromFile

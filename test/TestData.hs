@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module TestData where
 
-import           Paths_hastext
+import           Paths_wcVector
 import           Data.Monoid
 import           Data.List                  as L
 import           Data.Text                  as T
@@ -17,20 +17,16 @@ text8Path  = getDataFileName "data/text8s/text8_1k"
 noFailParams, noFailOnMultiThreadParams, text8RunParams :: IO HasTextArgs
 noFailParams = do
   inputFilePath <- noFailPath
-  return (Skipgram, noFailDefault{ _input  = inputFilePath
-                                 , _output = inputFilePath <> ".out"})
+  pure noFailDefault{ _input = inputFilePath, _output = inputFilePath <> ".out"}
 noFailOnMultiThreadParams = do
   inputFilePath <- noFailPath
-  return (Skipgram, noFailDefault{ _input   = inputFilePath
-                                 , _output  = inputFilePath <> ".out"
-                                 , _threads = 4})
+  pure noFailDefault{_input = inputFilePath, _output = inputFilePath <> ".out", _threads = 4}
 text8RunParams = do
   inputFilePath <- text8Path
-  return (Skipgram, text8RunDefault{ _input  = inputFilePath
-                                   , _output = inputFilePath <> ".out"})
+  pure text8RunDefault{_input  = inputFilePath, _output = inputFilePath <> ".out", _threads = 4}
 
-noFailDefault,text8RunDefault :: HasTextOptions
-noFailDefault =  HasTextOptions
+noFailDefault,text8RunDefault :: HasTextArgs
+noFailDefault =  HasTextArgs
   { _input          = ""
   , _output         = ""
   , _initLR         = 0.05
@@ -40,10 +36,11 @@ noFailDefault =  HasTextOptions
   , _epoch          = 5
   , _minCount       = 0
   , _negatives      = 5
+  , _method         = Cbow
   , _lossFn         = Negative
   , _tSub           = 0.0001
   , _threads        = 1
-  , _verbose        = 1
+  , _verbose        = 0
   }
 
 text8RunDefault = noFailDefault

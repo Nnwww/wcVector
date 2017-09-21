@@ -82,7 +82,7 @@ data Params = Params
   , _noiseDist     :: RMC.CondensedTableV Entry    -- ^ noise distribution table
   , _wordVecRef    :: {-# UNPACK #-} WordVecRef    -- ^ word vectors
   , _tokenCountRef :: {-# UNPACK #-} (IORef Word)  -- ^ the number of tokens consumed
-  , _progressRef   :: P.ProgressRef
+  , _progLogger    :: Word -> IO ()
   }
 
 -- | A local parameter per thread.

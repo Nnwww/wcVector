@@ -74,7 +74,7 @@ cbow line = forM_ [0..V.length line - 1] $ \idx -> do
 
 -- TODO: compare parallelization using MVar with one using ParIO etc.
 trainThread :: Params -> Integer -> IO Params
-trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _progressRef = progRef} threadNo = do
+trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _progLogger = logger} threadNo = do
   genRand <- RM.createSystemRandom
   bracket (SI.openFile (_input args) SI.ReadMode) SI.hClose (trainMain genRand)
   return params
@@ -83,14 +83,6 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
     method    = chooseMethod . _method $ args
     chooseMethod Cbow     = cbow
     chooseMethod Skipgram = skipgram
-
-    bufferTokenCount :: Word -> IO Word
-    bufferTokenCount localTokenCount
-      | localTokenCount <= _lrUpdateTokens args = return localTokenCount
-      | otherwise = do
-         atomicModifyRef' tcRef $ (,()) . (+ localTokenCount)
-         P.incProgress progRef $ fromIntegral localTokenCount
-         return 0
 
     trainMain :: RM.GenIO -> SI.Handle -> IO ()
     trainMain rand h = do
@@ -105,37 +97,42 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
               line <- getLineLoop h dict rand
               let learning = method $ V.map _eWord line
               runReaderT learning (params, newLParams)
-              newLocalTC <- bufferTokenCount $ localTC + fromIntegral (V.length line)
+              newLocalTC <- reportTokenCountBuffered $ localTC + fromIntegral (V.length line)
               trainUntilCountUpTokens newLocalTC newLParams
       trainUntilCountUpTokens 0 $ initLParams rand
+
+    reportTokenCountBuffered :: Word -> IO Word
+    reportTokenCountBuffered localTokenCount
+      | localTokenCount <= _lrUpdateTokens args = return localTokenCount
+      | otherwise = do
+         atomicModifyRef' tcRef $ (,()) . (+ localTokenCount)
+         logger $ localTokenCount
+         pure 0
 
 
 train :: HasTextArgs -> IO HasTextResult
 train args = do
   check
   dict  <- initFromFile args
-  rand  <- RM.createSystemRandom
   wvRef <- initWVRef dict
   tcRef <- newRef 0
-  let allTokens = fromIntegral $ (_epoch args) * (_ntokens dict)
-  (progRef, progThId) <- P.startProgress (P.msg "Training") P.percentage 40 allTokens
-  let params = Params
-        { _args          = args
-        , _dict          = dict
-        , _noiseDist     = genNoiseDistribution 0.75 $ _entries dict
-        , _wordVecRef    = wvRef
-        , _tokenCountRef = tcRef
-        , _progressRef   = progRef
-        }
-  resultParams : _ <- mapConcurrently (trainThread params) [0.. fromIntegral $ _threads args - 1]
-  immWordVec <- readMVar $ _wordVecRef resultParams
-  killThread progThId
-  return HasTextResult
-    { htArgs      = _args      resultParams
-    , htDict      = _dict      resultParams
-    , htNoiseDist = _noiseDist resultParams
-    , htWordVec   = immWordVec
-    }
+  switchLoggingFunction dict $ \logger -> do
+    let params = Params
+          { _args          = args
+          , _dict          = dict
+          , _noiseDist     = genNoiseDistribution 0.75 $ _entries dict
+          , _wordVecRef    = wvRef
+          , _tokenCountRef = tcRef
+          , _progLogger    = logger
+          }
+    resultParams : _ <- mapConcurrently (trainThread params) [0.. fromIntegral $ _threads args - 1]
+    immWordVec <- readMVar $ _wordVecRef resultParams
+    pure HasTextResult
+      { htArgs      = _args      resultParams
+      , htDict      = _dict      resultParams
+      , htNoiseDist = _noiseDist resultParams
+      , htWordVec   = immWordVec
+      }
   where
     check = validArgs args >>= (flip unless) (throwString "Error: Invalid Arguments.")
     initWVRef :: Dict -> IO WordVecRef
@@ -145,6 +142,21 @@ train args = do
         wordAndWeights = id &&& initW
         initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 zeroSpVector
         zeroSpVector = IntMap.fromList . map ((, 0) . _eID) . HS.elems $ ents
+
+    switchLoggingFunction dict
+      | _verbose args == 0 = \run -> run (const $ pure ())
+      | otherwise = bracketProgressThread (P.startProgress (P.msg "Training") P.percentage 40 allTokens)
+      where
+        allTokens = fromIntegral $ (_epoch args) * (_ntokens dict)
+
+    bracketProgressThread acquire run = do
+      (progRef, progThId) <- acquire
+      result <- run $ logTokenCount progRef
+      killThread progThId
+      pure result
+
+    logTokenCount :: P.ProgressRef -> Word -> IO ()
+    logTokenCount progRef localTokenCount = P.incProgress progRef $ fromIntegral localTokenCount
 
 data ErrMostSim = EmptyInput
                 | AbsenceOfWords {absPosW :: [T.Text], negPosW :: [T.Text]}

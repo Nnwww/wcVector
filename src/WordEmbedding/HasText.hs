@@ -27,6 +27,8 @@ import qualified Data.Binary.Get                               as BG
 import qualified Data.HashMap.Strict                           as HS
 import           Data.Mutable
 import           Data.Ord
+import           Data.IntMap                                   (IntMap)
+import qualified Data.IntMap                                   as IntMap
 import           Data.Semigroup
 import qualified Data.Text                                     as T
 import qualified Data.Text.IO                                  as TI
@@ -41,6 +43,7 @@ import           WordEmbedding.HasText.Args
 import           WordEmbedding.HasText.Dict
 import           WordEmbedding.HasText.Internal.Strict.HasText
 import           WordEmbedding.HasText.Internal.Type           (HasTextResult (..))
+import           WordEmbedding.HasText.Internal.SpVector
 import           WordEmbedding.HasText.Model
 
 instance B.Binary HasTextResult where
@@ -61,13 +64,13 @@ skipgram line = forM_ [0..V.length line - 1] $ \idx -> do
   (Params{_args = a}, lp) <- ask
   mapM_ (learn $ V.unsafeIndex line idx) =<< liftIO (unsafeWindowRange a lp line idx)
   where
-    learn input target = updateModel (V.singleton input) target
+    learn input target = updateModel [input] target
 
 cbow :: V.Vector T.Text -> Model
 cbow line = forM_ [0..V.length line - 1] $ \idx -> do
   (a, lp) <- asks $ first _args
   updateRange <- liftIO $ unsafeWindowRange a lp line idx
-  updateModel updateRange (V.unsafeIndex line idx)
+  updateModel (V.toList updateRange) (V.unsafeIndex line idx)
 
 -- TODO: compare parallelization using MVar with one using ParIO etc.
 trainThread :: Params -> Integer -> IO Params
@@ -76,7 +79,6 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
   bracket (SI.openFile (_input args) SI.ReadMode) SI.hClose (trainMain genRand)
   return params
   where
-    initLP gr = initLParams (_initLR args) (fromIntegral $ _dim args) gr
     allTokens = _epoch args * _ntokens dict
     method    = chooseMethod . _method $ args
     chooseMethod Cbow     = cbow
@@ -105,7 +107,7 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
               runReaderT learning (params, newLParams)
               newLocalTC <- bufferTokenCount $ localTC + fromIntegral (V.length line)
               trainUntilCountUpTokens newLocalTC newLParams
-      trainUntilCountUpTokens 0 =<< initLP rand
+      trainUntilCountUpTokens 0 $ initLParams rand
 
 
 train :: HasTextArgs -> IO HasTextResult
@@ -113,7 +115,7 @@ train args = do
   check
   dict  <- initFromFile args
   rand  <- RM.createSystemRandom
-  wvRef <- initWVRef rand dict
+  wvRef <- initWVRef dict
   tcRef <- newRef 0
   let allTokens = fromIntegral $ (_epoch args) * (_ntokens dict)
   (progRef, progThId) <- P.startProgress (P.msg "Training") P.percentage 40 allTokens
@@ -126,7 +128,7 @@ train args = do
         , _progressRef   = progRef
         }
   resultParams : _ <- mapConcurrently (trainThread params) [0.. fromIntegral $ _threads args - 1]
-  immWordVec <- unsafeFreezeWordVecRef $ _wordVecRef resultParams
+  immWordVec <- readMVar $ _wordVecRef resultParams
   killThread progThId
   return HasTextResult
     { htArgs      = _args      resultParams
@@ -135,18 +137,19 @@ train args = do
     , htWordVec   = immWordVec
     }
   where
-    unsafeFreezeWordVecRef wvRef = fmap HS.fromList . mapM (\(k,v) -> (k,) <$> unsafeFreezeMW v) . HS.toList =<< readMVar wvRef
     check = validArgs args >>= (flip unless) (throwString "Error: Invalid Arguments.")
-    initWVRef :: RM.GenIO -> Dict -> IO WordVecRef
-    initWVRef rnd d = (newMVar . HS.fromList) =<< (sequence . map initWVEntries . HS.keys $ _entries d)
+    initWVRef :: Dict -> IO WordVecRef
+    initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . HS.keys $ ents
       where
-        initWVEntries k = (k,) <$> initMW rnd (fromIntegral $ _dim args)
+        wordAndWeights :: T.Text -> (T.Text, Weights)
+        wordAndWeights = id &&& initW
+        initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 zeroSpVector
+        zeroSpVector = IntMap.fromList . map ((, 0) . _eID) . HS.elems $ ents
 
 data ErrMostSim = EmptyInput
                 | AbsenceOfWords {absPosW :: [T.Text], negPosW :: [T.Text]}
                 -- ^ words that do not exist in trained corpora when execute mostSimilar.
 
--- TODO: I would like to type input lists using liquidhaskell.
 -- | Get a most similar word list. Note that the result list is a delayed version of the entire dictionary.
 mostSimilar :: HasTextResult
             -> Word     -- ^ from
@@ -163,7 +166,7 @@ mostSimilar HasTextResult{htWordVec = wv} from to positives negatives
       cosSimVecs <- V.unsafeThaw . V.map (second $ cosSim mean . _wI) . V.fromList $ HS.toList wv
       VA.sortBy (flip $ comparing snd) cosSimVecs
       V.unsafeFreeze cosSimVecs
-    mean         = scale (1 / inputLength) $ foldr1 addUU scaledInputs
+    mean         = scale (1 / inputLength) $ foldr1 plus scaledInputs
     scaledInputs = map getPosScale positives <> map getNegScale negatives
     absPoss      = absentWords positives
     absNegs      = absentWords negatives
@@ -200,7 +203,7 @@ saveVectorCompat HasTextResult{htArgs = args, htDict = dict, htWordVec = wv} =
     outFilePath = _output args
     sizeAndDim = (showb . HS.size $ _entries dict) <> showbSpace <> (showb $ _dim args)
     putVec h (k, Weights{_wI = i}) =
-      TI.hPutStrLn h . toText $ (fromText k) <> showbSpace <> (unwordsB . map showb $ VU.toList i)
+      TI.hPutStrLn h . toText $ (fromText k) <> showbSpace <> (unwordsB . map showb $ IntMap.toList i)
 
 -- | This function load a pre-trained data, but you don't have to use this because this is essentially a wrapper function of Binary package at present.
 loadModel :: (MonadIO m) => FilePath -> m (Either (BG.ByteOffset, String) HasTextResult)

@@ -3,18 +3,11 @@
 
 module WordEmbedding.HasText.Internal.Strict.HasText
   ( unsafeWindowRange
-  , norm2
-  , scale
   , sigmoid
-  , addUU
-  , dotUU
-  , unitVector
-  , cosSim
   ) where
 
 import qualified Data.Text                           as T
 import qualified Data.Vector                         as V
-import qualified Data.Vector.Unboxed                 as VU
 import qualified System.Random.MWC                   as RM
 import           WordEmbedding.HasText.Internal.Type
 
@@ -23,10 +16,9 @@ unsafeWindowRange :: HasTextArgs -> LParams -> V.Vector T.Text
                   -> Int -- ^ The central index of a window. Note that no boundary checks.
                   -> IO (V.Vector T.Text)
 unsafeWindowRange args lp line targetIdx =
-  unsafeWindowRangePrim negs rand line targetIdx
+  unsafeWindowRangePrim negs (_rand lp) line targetIdx
   where
     negs = fromIntegral . _negatives $ args
-    rand = _rand lp
 
 -- The function that return a range of the dynamic window.
 unsafeWindowRangePrim :: Int -> RM.GenIO -> V.Vector T.Text
@@ -39,23 +31,6 @@ unsafeWindowRangePrim negatives rand line targetIdx = do
       inWindowAndNotTarget i _ = winFrom < i && i < winTo && i /= targetIdx
   return $ V.ifilter (\i e -> not $ inWindowAndNotTarget i e) line
 
-norm2 :: VU.Vector Double -> Double
-norm2 v = sqrt . VU.foldl1 (+) . VU.map (**2) $ v
-
-scale :: Double -> VU.Vector Double -> VU.Vector Double
-scale coeff v = VU.map (coeff *) v
-
-addUU :: VU.Vector Double -> VU.Vector Double -> VU.Vector Double
-addUU = VU.zipWith (+)
-
-dotUU :: VU.Vector Double -> VU.Vector Double -> Double
-dotUU v1 v2 = VU.foldl1 (+) $ VU.zipWith (*) v1 v2
-
-unitVector :: VU.Vector Double -> VU.Vector Double
-unitVector v = scale (1 / norm2 v) v
-
-cosSim :: VU.Vector Double -> VU.Vector Double -> Double
-cosSim nume deno = dotUU (unitVector nume) (unitVector deno)
 
 sigmoid :: Double -> Double
 sigmoid lx = 1.0 / (1.0 + exp (negate lx))

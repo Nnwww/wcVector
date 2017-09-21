@@ -64,6 +64,7 @@ library
       WordEmbedding.HasText.Model
   other-modules:
       WordEmbedding.HasText.Internal.Type
+      WordEmbedding.HasText.Internal.SpVector
       WordEmbedding.HasText.Internal.Strict.HasText
       WordEmbedding.HasText.Internal.Strict.Model
       WordEmbedding.HasText.Internal.Strict.MVectorOps

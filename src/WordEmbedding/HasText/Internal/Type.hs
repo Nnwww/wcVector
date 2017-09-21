@@ -93,9 +93,8 @@ data LParams = LParams
   }
 
 -- | The pair of input/output word vectors correspond to a word.
-data Weights = Weights
+newtype Weights = Weights
   { _wI :: SpVector -- ^ input word vector
-  , _wO :: SpVector -- ^ output word vector
   } deriving (Generic)
 
 data Entry = Entry

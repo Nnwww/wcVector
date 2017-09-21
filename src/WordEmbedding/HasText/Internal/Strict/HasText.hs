@@ -3,8 +3,6 @@
 
 module WordEmbedding.HasText.Internal.Strict.HasText
   ( unsafeWindowRange
-  , initMW
-  , unsafeFreezeMW
   , norm2
   , scale
   , sigmoid
@@ -17,7 +15,6 @@ module WordEmbedding.HasText.Internal.Strict.HasText
 import qualified Data.Text                           as T
 import qualified Data.Vector                         as V
 import qualified Data.Vector.Unboxed                 as VU
-import qualified Data.Vector.Unboxed.Mutable         as VUM
 import qualified System.Random.MWC                   as RM
 import           WordEmbedding.HasText.Internal.Type
 
@@ -41,21 +38,6 @@ unsafeWindowRangePrim negatives rand line targetIdx = do
       winTo   = if V.length line > targetIdx + winRange then targetIdx + winRange else V.length line - 1
       inWindowAndNotTarget i _ = winFrom < i && i < winTo && i /= targetIdx
   return $ V.ifilter (\i e -> not $ inWindowAndNotTarget i e) line
-
-initMW :: RM.GenIO -> Int -> IO MWeights
-initMW rnd dm = do
-  randoms <- VUM.replicateM dm $ RM.uniformR range rnd
-  zeros   <- VUM.new dm
-  return MWeights{_mwI = randoms, _mwO = zeros}
-  where
-    range :: (Double, Double)
-    range = (-1 / fromIntegral dm, 1 / fromIntegral dm)
-
-unsafeFreezeMW :: MWeights -> IO Weights
-unsafeFreezeMW MWeights{..} = do
-  wi <- VU.unsafeFreeze _mwI
-  wo <- VU.unsafeFreeze _mwO
-  return Weights{_wI = wi, _wO = wo}
 
 norm2 :: VU.Vector Double -> Double
 norm2 v = sqrt . VU.foldl1 (+) . VU.map (**2) $ v

@@ -53,6 +53,7 @@ library
     , text >= 1.2
     , text-show >= 3.4.1.1
     , terminal-progress-bar >= 0.1.1.1
+    , containers >= 0.5.7.1
     , unordered-containers >= 0.2
     , vector >= 0.11
     , vector-algorithms >= 0.7
@@ -96,6 +97,7 @@ executable wcVector
     , text-show >= 3.4.1.1
     , terminal-progress-bar >= 0.1.1.1
     , unordered-containers >= 0.2
+    , containers >= 0.5.7.1
     , vector >= 0.11
     , vector-algorithms >= 0.7
     , optparse-applicative >= 0.13.2
@@ -130,6 +132,7 @@ test-suite spec
     , text-show >= 3.4.1.1
     , terminal-progress-bar >= 0.1.1.1
     , unordered-containers >= 0.2
+    , containers >= 0.5.7.1
     , vector >= 0.11
     , vector-algorithms >= 0.7
     , wcVector
@@ -171,6 +174,7 @@ benchmark core
     , text-show >= 3.4.1.1
     , terminal-progress-bar >= 0.1.1.1
     , unordered-containers >= 0.2
+    , containers >= 0.5.7.1
     , vector >= 0.11
     , vector-algorithms >= 0.7
     , wcVector

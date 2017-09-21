@@ -31,15 +31,15 @@ learningDefault = HasTextArgs
   , _output         = ""
   , _initLR         = 0.1
   , _lrUpdateTokens = 100
-  , _dim            = 100
+  , _dim            = 10000
   , _windows        = 5
   , _epoch          = 1
-  , _minCount       = 1
+  , _minCount       = 10
   , _negatives      = 5
   , _method         = Skipgram
   , _lossFn         = Negative
   , _tSub           = 0.0001
-  , _threads        = 8
+  , _threads        = 4
   , _verbose        = 1
   }
 

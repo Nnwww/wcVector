@@ -10,28 +10,20 @@ module WordEmbedding.HasText.Model
   , genNoiseDistribution
   ) where
 
-import           Control.Applicative
 import           Control.Arrow
 import           Control.Concurrent
-import           Control.Monad
 import           Control.Monad.Reader
 import           Data.Binary                                      (Binary)
 import           Data.Binary.Orphans                              ()
-import           Data.IntMap                     (IntMap)
 import qualified Data.IntMap                     as IntMap
-import           Data.Foldable
 import qualified Data.HashMap.Strict                              as HS
 import qualified Data.List                                        as L
-import           Data.Mutable
-import           Data.Semigroup
 import qualified Data.Text                                        as T
 import qualified Data.Vector                                      as V
-import qualified Data.Vector.Unboxed.Mutable                      as VUM
 import qualified System.Random.MWC                                as RM
 import qualified System.Random.MWC.CondensedTable                 as RMC
 import           WordEmbedding.HasText.Dict
 import           WordEmbedding.HasText.Internal.Strict.Model
-import qualified WordEmbedding.HasText.Internal.Strict.MVectorOps as HMV
 import           WordEmbedding.HasText.Internal.Type              (HasTextArgs (..),
                                                                    LParams (..),
                                                                    Model,

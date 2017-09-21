@@ -18,12 +18,14 @@ module WordEmbedding.HasText.Internal.Type
   , WordVecRef
   , TMap
   , RandomIO
+  , SpVector
   , Weights(..)
-  , MWeights(..)
   , Dict(..)
   , Entry(..)
   ) where
 
+import           Data.IntMap                     (IntMap)
+import qualified Data.IntMap                     as IntMap
 import           Data.HashMap.Strict              (HashMap)
 import           Data.Mutable
 import           Data.Text                        (Text)
@@ -32,7 +34,6 @@ import qualified Data.Vector.Unboxed.Mutable      as VUM
 import qualified System.ProgressBar               as P
 import qualified System.Random.MWC                as RM
 import qualified System.Random.MWC.CondensedTable as RMC
-
 import           Control.Concurrent
 import           Control.Monad.Reader
 import           GHC.Generics                     (Generic)
@@ -86,35 +87,21 @@ data Params = Params
 
 -- | A local parameter per thread.
 data LParams = LParams
-  { _loss   :: {-# UNPACK #-} (IOURef Double)
-  , _lr     :: Double
-  , _hidden :: {-# UNPACK #-} (VUM.IOVector Double)
-  , _grad   :: {-# UNPACK #-} (VUM.IOVector Double)
+  { _lr     :: Double
+  , _hidden :: SpVector
   , _rand   :: RM.GenIO
   }
 
-type Model = ReaderT (Params, LParams) IO ()
-
-type WordVec    = TMap Weights
-type WordVecRef = MVar (TMap MWeights)
-
-type TMap a = HashMap Text a
-type RandomIO = IO
-
 -- | The pair of input/output word vectors correspond to a word.
 data Weights = Weights
-  { _wI :: {-# UNPACK #-} (VU.Vector Double) -- ^ input word vector
-  , _wO :: {-# UNPACK #-} (VU.Vector Double) -- ^ output word vector
+  { _wI :: SpVector -- ^ input word vector
+  , _wO :: SpVector -- ^ output word vector
   } deriving (Generic)
-
-data MWeights = MWeights
-  { _mwI :: {-# UNPACK #-} (VUM.IOVector Double) -- ^ input word vector
-  , _mwO :: {-# UNPACK #-} (VUM.IOVector Double) -- ^ output word vector
-  }
 
 data Entry = Entry
   { _eWord  :: Text
   , _eCount :: Word
+  , _eID    :: Int
   -- , etype    :: EntryType
   -- , subwords :: ~(Vec T.Text)
   } deriving (Generic, Show)
@@ -127,3 +114,12 @@ data Dict = Dict
   , _discards :: TMap Double
   , _ntokens  :: Word
   } deriving (Generic, Show)
+
+type SpVector = IntMap Double
+type Model = ReaderT (Params, LParams) IO ()
+
+type WordVec = TMap Weights
+type WordVecRef = MVar (WordVec)
+
+type TMap a = HashMap Text a
+type RandomIO = IO

@@ -9,13 +9,12 @@ module WordEmbedding.HasText.Dict
   , getLineLoop
   , unsafeGetLine
   , initFromFile
-  , addEntries
+  , addEntryWithID
   , foldWordsFromFile
   ) where
 
 import           Control.Exception.Safe
 import           Control.Monad
-import           Control.Monad.IO.Class
 import           Data.Binary                         (Binary)
 import           Data.Binary.Orphans                 ()
 import qualified Data.Char                           as C
@@ -79,7 +78,7 @@ foldWordsFromFile modifier plain readPath =
 
 initFromFile  :: HasTextArgs -> IO Dict
 initFromFile HasTextArgs{..} = do
-  ents <- foldWordsFromFile addEntries HS.empty _input
+  (_, ents) <- foldWordsFromFile addEntryWithID (0, HS.empty) _input
   let newEnts = threshold ents _minCount
       newTkns = sizeTokens newEnts
       newDiss = initDiscards _tSub newEnts newTkns
@@ -93,10 +92,10 @@ threshold ents t = HS.filter (\e -> t < _eCount e) ents
 sizeTokens :: TMap Entry -> Word
 sizeTokens = foldr (\e acc -> acc + _eCount e) 0
 
-addEntries :: TMap Entry -> T.Text -> TMap Entry
-addEntries ents t = HS.alter newEntry t ents
-  where
-    newEntry (Just old@Entry{_eCount = c}) = Just old{_eCount = c + 1}
-    newEntry Nothing                       = Just Entry{_eWord = t, _eCount = 1}
+addEntryWithID :: (Int, TMap Entry) -> T.Text -> (Int, TMap Entry)
+addEntryWithID (idState, ents) key =
+  case HS.lookup key ents of
+    Nothing -> (idState + 1, HS.insert key Entry{_eWord = key, _eCount = 1, _eID = idState} ents)
+    Just dup@Entry{_eCount = c} -> (idState, HS.insert key dup{_eCount = c + 1} ents)
     -- todo: implement ngram and label functionality
     -- nGrams n = (!! n) . L.transpose . L.map T.inits . T.tails

@@ -41,8 +41,8 @@ initLParams = LParams 0 IntMap.empty
 -- The function that update a model. This function is a entry point of LParams module.
 updateModel :: [T.Text] -> T.Text -> Model
 updateModel inputs updTarget = do
-  (Params{_wordVecRef = wvRef}, LParams{_hidden = h}) <- ask
-  hidden <- liftIO $ computeHidden wvRef inputs
+  (Params{_wordVecRef = wvRef, _dict = dic}, _) <- ask
+  hidden <- liftIO $ computeHidden wvRef dic inputs updTarget
   liftIO $ modifyMVar_ wvRef (pure . HS.insert updTarget hidden)
 
 getNegative :: RMC.CondensedTableV Entry -> RM.GenIO -> T.Text -> IO Entry

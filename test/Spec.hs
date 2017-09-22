@@ -54,5 +54,5 @@ unitTests = testGroup "Unit tests"
             , testCase "initWVRef make one-hot vectors" $ testInitWVRef
             , testCaseSteps "A series of Hastext's operations is not fail (on multi thread)"
               (normalUseCase 10 "a" noFailOnMultiThreadParams)
-            -- , testCaseSteps "Hastext run on text8" (nomarlUseCase 10 "may" text8RunParams)
+            , testCaseSteps "Hastext run on text8" (normalUseCase 10 "may" text8RunParams)
             ]

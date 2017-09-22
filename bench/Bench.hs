@@ -2,7 +2,7 @@
 
 import Data.Semigroup
 import Criterion.Main
-import Paths_hastext
+import Paths_wcVector
 import WordEmbedding.HasText.Args
 import WordEmbedding.HasText
 
@@ -23,7 +23,4 @@ main = defaultMain [
   ]
   where
     trainOnDataFile dataFilePath = saveModel =<< train =<< (setFilePath <$> getDataFileName dataFilePath)
-    setFilePath inputFilePath = (Skipgram, learningDefault{ _input  = inputFilePath
-                                                          , _output = inputFilePath <> ".out"
-                                                          , _minCount = 0
-                                                          })
+    setFilePath inputFilePath = learningDefault{ _input  = inputFilePath , _output = inputFilePath <> ".out"}

@@ -22,20 +22,20 @@ unsafeWindowRange :: HasTextArgs -> LParams -> V.Vector T.Text
                   -> Int -- ^ The central index of a window. Note that no boundary checks.
                   -> IO (V.Vector T.Text)
 unsafeWindowRange args lp line targetIdx =
-  unsafeWindowRangePrim negs (_rand lp) line targetIdx
+  unsafeWindowRangePrim win (_rand lp) line targetIdx
   where
-    negs = fromIntegral . _negatives $ args
+    win = fromIntegral . _windows $ args
 
 -- The function that return a range of the dynamic window.
 unsafeWindowRangePrim :: Int -> RM.GenIO -> V.Vector T.Text
                       -> Int -- ^ The central index of a window. Note that no boundary checks.
                       -> IO (V.Vector T.Text)
-unsafeWindowRangePrim negatives rand line targetIdx = do
-  winRange <- RM.uniformR (0, negatives) rand
+unsafeWindowRangePrim windows rand line targetIdx = do
+  winRange <- RM.uniformR (0, windows) rand
   let winFrom = if targetIdx - winRange > 0 then targetIdx - winRange else 0
       winTo   = if V.length line > targetIdx + winRange then targetIdx + winRange else V.length line - 1
       inWindowAndNotTarget i _ = winFrom < i && i < winTo && i /= targetIdx
-  return $ V.ifilter (\i e -> not $ inWindowAndNotTarget i e) line
+  pure $ V.ifilter (\i e -> not $ inWindowAndNotTarget i e) line
 
 
 sigmoid :: Double -> Double
@@ -47,5 +47,4 @@ initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . H
   where
     wordAndWeights :: T.Text -> (T.Text, Weights)
     wordAndWeights = id &&& initW
-    initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 zeroSpVector
-    zeroSpVector = IntMap.fromList . map ((, 0) . _eID) . HS.elems $ ents
+    initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 IntMap.empty

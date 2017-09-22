@@ -180,4 +180,6 @@ benchmark core
     , vector-algorithms >= 0.7
     , wcVector
     , criterion >= 1.1.4
+  other-modules:
+      Paths_wcVector
   default-language: Haskell2010

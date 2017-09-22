@@ -12,8 +12,7 @@ noFailInputList = mconcat . L.map (L.replicate 5 . T.singleton) $ ['a' .. 'e']
 
 noFailPath, text8Path :: IO FilePath
 noFailPath = getDataFileName "data/NonFail.txt"
-text8Path  = getDataFileName "data/text8s/text8_1k"
--- text8Path  = getDataFileName "data/text8"
+text8Path  = getDataFileName "data/text8"
 noFailParams, noFailOnMultiThreadParams, text8RunParams :: IO HasTextArgs
 noFailParams = do
   inputFilePath <- noFailPath

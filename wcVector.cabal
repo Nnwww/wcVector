@@ -74,7 +74,7 @@ executable wcVector
   hs-source-dirs:
       app
   ghc-options: -Wall -Wincomplete-patterns -Wincomplete-record-updates -O2 -threaded -rtsopts -with-rtsopts=-N
-  ghc-prof-options: -O2 -threaded -rtsopts -with-rtsopts="-N -p"
+  ghc-prof-options: -O2 -threaded -rtsopts -prof -fprof-auto -with-rtsopts="-N -p -hc"
   pkgconfig-depends: zlib
   build-depends:
       base >= 4.7 && < 5

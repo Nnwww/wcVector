@@ -135,13 +135,6 @@ train args = do
       }
   where
     check = validArgs args >>= (flip unless) (throwString "Error: Invalid Arguments.")
-    initWVRef :: Dict -> IO WordVecRef
-    initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . HS.keys $ ents
-      where
-        wordAndWeights :: T.Text -> (T.Text, Weights)
-        wordAndWeights = id &&& initW
-        initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 zeroSpVector
-        zeroSpVector = IntMap.fromList . map ((, 0) . _eID) . HS.elems $ ents
 
     switchLoggingFunction dict
       | _verbose args == 0 = \run -> run (const $ pure ())

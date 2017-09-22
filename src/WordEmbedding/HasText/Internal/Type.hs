@@ -97,6 +97,9 @@ newtype Weights = Weights
   { _wI :: SpVector -- ^ input word vector
   } deriving (Generic)
 
+instance Show Weights where
+  show a = show $ _wI a
+
 data Entry = Entry
   { _eWord  :: Text
   , _eCount :: Word

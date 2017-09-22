@@ -1,11 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE Strict          #-}
+{-# LANGUAGE TupleSections   #-}
 
 module WordEmbedding.HasText.Internal.Strict.HasText
   ( unsafeWindowRange
   , sigmoid
+  , initWVRef
   ) where
 
+import           Control.Arrow
+import           Control.Concurrent
+import qualified Data.IntMap                         as IntMap
+import qualified Data.HashMap.Strict                 as HS
 import qualified Data.Text                           as T
 import qualified Data.Vector                         as V
 import qualified System.Random.MWC                   as RM
@@ -34,3 +40,12 @@ unsafeWindowRangePrim negatives rand line targetIdx = do
 
 sigmoid :: Double -> Double
 sigmoid lx = 1.0 / (1.0 + exp (negate lx))
+
+
+initWVRef :: Dict -> IO WordVecRef
+initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . HS.keys $ ents
+  where
+    wordAndWeights :: T.Text -> (T.Text, Weights)
+    wordAndWeights = id &&& initW
+    initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 zeroSpVector
+    zeroSpVector = IntMap.fromList . map ((, 0) . _eID) . HS.elems $ ents

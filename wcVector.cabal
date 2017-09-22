@@ -62,7 +62,6 @@ library
       WordEmbedding.HasText.Args
       WordEmbedding.HasText.Dict
       WordEmbedding.HasText.Model
-  other-modules:
       WordEmbedding.HasText.Internal.Type
       WordEmbedding.HasText.Internal.SpVector
       WordEmbedding.HasText.Internal.Strict.HasText
@@ -145,6 +144,7 @@ test-suite spec
       TestDict
       TestData
       TestModel
+      TestHasTextInternal
   default-language: Haskell2010
 
 benchmark core

@@ -44,4 +44,3 @@ updateModel inputs updTarget = do
   (Params{_wordVecRef = wvRef, _dict = dic}, _) <- ask
   hidden <- liftIO $ computeHidden wvRef dic inputs updTarget
   liftIO $ modifyMVar_ wvRef (pure . HS.insert updTarget hidden)
-{-# INLINE updateModel #-}

@@ -34,13 +34,10 @@ unsafeWindowRangePrim windows rand line targetIdx = do
   winRange <- RM.uniformR (0, windows) rand
   let winFrom = if targetIdx - winRange > 0 then targetIdx - winRange else 0
       winTo   = if V.length line > targetIdx + winRange then targetIdx + winRange else V.length line - 1
-      inWindowAndNotTarget i _ = winFrom < i && i < winTo && i /= targetIdx
-  pure $ V.ifilter (\i e -> not $ inWindowAndNotTarget i e) line
-
+  pure . V.unsafeDrop targetIdx . V.unsafeSlice winFrom (winTo - winFrom) $ line
 
 sigmoid :: Double -> Double
 sigmoid lx = 1.0 / (1.0 + exp (negate lx))
-
 
 initWVRef :: Dict -> IO WordVecRef
 initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . HS.keys $ ents

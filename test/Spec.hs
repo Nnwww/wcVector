@@ -13,6 +13,7 @@ import qualified Data.Text                   as T
 import qualified System.Directory            as SD
 import           WordEmbedding.HasText.Args
 import           WordEmbedding.HasText
+import           WordEmbedding.HasText.Internal.Type
 
 normalUseCase :: Word -> T.Text -> IO HasTextArgs -> ((String -> IO ()) -> Assertion)
 normalUseCase topn posWord args step = do
@@ -21,6 +22,8 @@ normalUseCase topn posWord args step = do
   step $ "output path: " <> o
   step "Running train"
   w <- train a
+  step "show Entries:"
+  step . show . _entries $ htDict w
   step "show WordVec:"
   step . show $ htWordVec w
   step "Running mostSim"

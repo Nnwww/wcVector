@@ -1,3 +1,4 @@
+{-# LANGUAGE Strict #-}
 module WordEmbedding.HasText.Model
   ( Params(..)
   , LParams(..)
@@ -7,7 +8,6 @@ module WordEmbedding.HasText.Model
   , Weights(..)
   , initLParams
   , updateModel
-  , genNoiseDistribution
   ) where
 
 import           Control.Arrow
@@ -44,28 +44,4 @@ updateModel inputs updTarget = do
   (Params{_wordVecRef = wvRef, _dict = dic}, _) <- ask
   hidden <- liftIO $ computeHidden wvRef dic inputs updTarget
   liftIO $ modifyMVar_ wvRef (pure . HS.insert updTarget hidden)
-
-getNegative :: RMC.CondensedTableV Entry -> RM.GenIO -> T.Text -> IO Entry
-getNegative noiseTable rand input = tryLoop
-  where
-    tryLoop = do
-      ent <- RMC.genFromTable noiseTable rand
-      if _eWord ent /= input then pure ent else tryLoop
-
-genNoiseDistribution :: Double                    -- ^ nth power of unigram distribution
-                     -> TMap Entry                -- ^ vocabulary set for constructing a noise distribution table
-                     -> RMC.CondensedTableV Entry -- ^ noise distribution table
-genNoiseDistribution power ents =
-  RMC.tableFromProbabilities . V.map (second divZ) . V.fromList $ countToPowers
-  where
-    -- Z is a normalization parameter of the noise distribution in paper.
-    divZ a = a / z
-    z = L.sum . L.map snd $ countToPowers
-    countToPowers = HS.elems . HS.map (id &&& countToPower) $ ents
-    countToPower ent = (fromIntegral . _eCount $ ent) ** power
-
-genHierarchical :: TMap Entry -- ^ vocabulary set for building a hierarchical softmax tree
-                -> Double           -- ^ learning rate
-                -> T.Text           -- ^ a input word
-                -> Double           -- ^ loss parameter
-genHierarchical ents lr input = undefined
+{-# INLINE updateModel #-}

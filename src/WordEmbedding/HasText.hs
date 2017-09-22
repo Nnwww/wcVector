@@ -54,7 +54,6 @@ instance B.Binary HasTextResult where
     return HasTextResult
       { htArgs      = a
       , htDict      = d
-      , htNoiseDist = genNoiseDistribution 0.75 $ _entries d
       , htWordVec   = w
       }
   put HasTextResult{htArgs = a, htDict = d, htWordVec = w} = B.put a >> B.put d >> B.put w
@@ -120,7 +119,6 @@ train args = do
     let params = Params
           { _args          = args
           , _dict          = dict
-          , _noiseDist     = genNoiseDistribution 0.75 $ _entries dict
           , _wordVecRef    = wvRef
           , _tokenCountRef = tcRef
           , _progLogger    = logger
@@ -130,7 +128,6 @@ train args = do
     pure HasTextResult
       { htArgs      = _args      resultParams
       , htDict      = _dict      resultParams
-      , htNoiseDist = _noiseDist resultParams
       , htWordVec   = immWordVec
       }
   where

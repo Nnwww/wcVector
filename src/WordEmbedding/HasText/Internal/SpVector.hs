@@ -18,11 +18,13 @@ norm2 v = sqrt . getSum . foldMap (Sum . (** 2)) $ v
 scale :: Double -> SpVector -> SpVector
 scale coeff v = IntMap.map (coeff *) v
 
+-- Note: addition of each element of IntMap is unionWith (+).
+-- On the other hand, multiplication of each element of IntMap is intersectionWith (*).
 plus :: SpVector -> SpVector -> SpVector
 plus = IntMap.unionWith (+)
 
 dot :: SpVector -> SpVector -> Double
-dot v1 v2 = sum $ IntMap.unionWith (*) v1 v2
+dot v1 v2 = sum $ IntMap.intersectionWith (*) v1 v2
 
 unitVector :: SpVector -> SpVector
 unitVector v = scale (1 / norm2 v) v

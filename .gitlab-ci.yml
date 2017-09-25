@@ -7,8 +7,8 @@ build_job:
   stage: build
   script:
     - stack clean
-    - stack install wcVector --split-objs --ghc-options="-fPIC -fllvm" --local-bin-path $HOME
-    - upx --best --ultra-brute -o wcVector $HOME/wcVector
+    - stack install wcVector --split-objs --ghc-options="-fPIC -fllvm" --local-bin-path ./
+    - upx --best --ultra-brute -o wcVector ./wcVector
   artifacts:
     paths:
-      - $HOME/wcVector
+      - ./wcVector

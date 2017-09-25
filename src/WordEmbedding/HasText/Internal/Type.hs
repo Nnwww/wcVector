@@ -72,7 +72,7 @@ data HasTextResult = HasTextResult
   { htArgs      :: HasTextArgs
   , htDict      :: Dict
   , htWordVec   :: WordVec                   -- ^ word vectors
-  }
+  } deriving (Show)
 
 -- | A parameter throughout learning. Params should be thread-safe since it is shared among threads.
 data Params = Params
@@ -96,7 +96,7 @@ newtype Weights = Weights
   } deriving (Generic)
 
 instance Show Weights where
-  show a = show $ _wI a
+  show a = show $! _wI a
 
 data Entry = Entry
   { _eWord  :: Text

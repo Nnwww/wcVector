@@ -76,6 +76,7 @@ executable wcVector
   main-is: Main.hs
   hs-source-dirs:
       app
+  ld-options: -static
   ghc-options: -Wall -Wincomplete-patterns -Wincomplete-record-updates -O2 -threaded -rtsopts -with-rtsopts=-N
   ghc-prof-options: -O2 -threaded -rtsopts -fprof-auto "-with-rtsopts=-N -p -hc"
   pkgconfig-depends: zlib

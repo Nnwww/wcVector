@@ -7,7 +7,6 @@ module WordEmbedding.HasText.Dict
   , Entry(..)
   , initDiscards
   , getLineLoop
-  , unsafeGetLine
   , initFromFile
   , addEntryWithID
   , foldWordsFromFile
@@ -25,6 +24,7 @@ import qualified Data.Text                           as T
 import qualified Data.Vector                         as V
 import           System.IO                           as SI
 import qualified System.Random.MWC                   as RM
+import           WordEmbedding.HasText.Internal.Dict
 import           WordEmbedding.HasText.Internal.Type (Dict (..), Entry (..),
                                                       HasTextArgs,
                                                       HasTextArgs (..), TMap)
@@ -50,21 +50,10 @@ discard diss gen word =
       return $ randProb > disProb
 
 getLineLoop :: Handle -> Dict -> RM.GenIO -> IO (V.Vector Entry)
-getLineLoop h dict rand = do
+getLineLoop h dict@Dict{_discards = dis} rand = do
   isE <- SI.hIsEOF h
   when isE $ SI.hSeek h SI.AbsoluteSeek 0
-  unsafeGetLine h dict rand
-
-unsafeGetLine :: Handle -> Dict -> RM.GenIO -> IO (V.Vector Entry)
-unsafeGetLine h Dict{..} rand =
-  runConduit $ CC.sourceHandle h
-    .| CC.decodeUtf8
-    .| CC.take 1024 -- TODO: move a constant to args
-    .| CC.takeWhileE (/= '\n')
-    .| CC.splitOnUnboundedE C.isSpace
-    .| CC.filterM (discard _discards rand)
-    .| CC.map (_entries HS.!)
-    .| CC.sinkVector
+  unsafeGetLine h dict $ discard dis rand
 
 -- |
 -- The function folding words splited by @Data.Char.isSpace@ from a file.

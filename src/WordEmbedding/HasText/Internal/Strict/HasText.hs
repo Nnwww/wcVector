@@ -37,11 +37,11 @@ unsafeWindowRangePrim windows rand line targetIdx = do
   pure . V.unsafeDrop targetIdx . V.unsafeSlice winFrom (winTo - winFrom) $ line
 
 sigmoid :: Double -> Double
-sigmoid lx = 1.0 / (1.0 + exp (negate lx))
+sigmoid lx = 1.0 / (1.0 + (exp $! negate lx))
 
 initWVRef :: Dict -> IO WordVecRef
 initWVRef Dict{_entries = ents} = newMVar . HS.fromList . map wordAndWeights . HS.keys $ ents
   where
     wordAndWeights :: T.Text -> (T.Text, Weights)
     wordAndWeights = id &&& initW
-    initW key = Weights $ IntMap.insert (_eID $ ents HS.! key) 1 IntMap.empty
+    initW key = Weights $! IntMap.insert (_eID $! ents HS.! key) 1 IntMap.empty

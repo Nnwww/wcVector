@@ -21,7 +21,7 @@ computeHidden wsRef Dict{_entries = ents} input target = do
   let inputIDs = map (_eID) . map (ents HS.!) $ input
   ws <- readMVar wsRef
   let targetSpVec = _wI $! ws HS.! target
-  pure . Weights $! L.foldr (\eid !spv -> IntMap.alter plus eid spv) targetSpVec inputIDs
+  pure . Weights $! L.foldl' (\ !spv eid -> IntMap.alter plusOne eid spv) targetSpVec inputIDs
   where
-    plus (Just v) = Just $! v + 1
-    plus Nothing  = Just $ 1
+    plusOne (Just v) = Just $! v + 1
+    plusOne Nothing  = Just $! 1

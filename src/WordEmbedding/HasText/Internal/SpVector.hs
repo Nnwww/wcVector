@@ -13,7 +13,7 @@ import           WordEmbedding.HasText.Internal.Type           (SpVector)
 import           Data.Monoid
 
 norm2 :: SpVector -> Double
-norm2 v = sqrt . getSum . foldMap (Sum . (** 2)) $ v
+norm2 = sqrt . getSum . foldMap (Sum . (** 2))
 
 scale :: Double -> SpVector -> SpVector
 scale coeff v = IntMap.map (coeff *) v

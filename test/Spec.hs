@@ -4,6 +4,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import           TestDict
+import           TestModel
 import           TestData
 import           TestHasTextInternal
 
@@ -22,9 +23,9 @@ normalUseCase topn posWord args step = do
   step $ "output path: " <> o
   step "Running train"
   w <- train a
-  step "show Entries:"
+  step "Show Entries:"
   step . show . _entries $ htDict w
-  step "show WordVec:"
+  step "Show WordVec:"
   step . show $ htWordVec w
   step "Running mostSim"
   let Right r = mostSimilarN w topn [posWord] []
@@ -54,8 +55,9 @@ unitTests = testGroup "Unit tests"
             , testCase "wordsFromFile read a file" $ testReadCorrectlyWordsFromFile
             , testCase "(wordsFromFile addEntries) collect entries from file" $ testCollectFromFile
             , testCase "testInitFromFile is non zero" $ testInitFromFile
-            , testCase "initWVRef make one-hot vectors" $ testInitWVRef
+            , testCase "initWVRef make one-hot vectors" $ testInitWVRefMakeOneHotVectors
+            , testCaseSteps "computeHidden" $ testComputeHidden
             , testCaseSteps "A series of Hastext's operations is not fail (on multi thread)"
               (normalUseCase 10 "a" noFailOnMultiThreadParams)
-            , testCaseSteps "Hastext run on text8" (normalUseCase 10 "may" text8RunParams)
+            , testCaseSteps "Hastext run on text8" (normalUseCase 10 "english" text8_1mRunParams)
             ]

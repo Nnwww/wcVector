@@ -1,16 +1,22 @@
 module TestHasTextInternal where
 
-import Control.Concurrent
-import Debug.Trace
-import WordEmbedding.HasText.Dict
-import WordEmbedding.HasText.Internal.Strict.HasText
-import Test.Tasty.HUnit
-import TestData
-import qualified Data.HashMap.Strict                 as HS
-import qualified Data.IntMap                         as IntMap
+import qualified Data.HashMap.Strict                           as HS
+import qualified Data.IntMap                                   as IntMap
+import           Data.Monoid
+import           Test.Tasty.HUnit
+import           TestData
 import           WordEmbedding.HasText.Internal.Type
 
-testInitWVRef :: Assertion
-testInitWVRef = assert $ do
-  wv <- readMVar =<< initWVRef =<< initFromFile =<< noFailParams
-  pure . IntMap.null . IntMap.filter (/= 1.0) . IntMap.unionsWith (+) . map _wI $ HS.elems wv
+testInitWVRefMakeOneHotVectors :: Assertion
+testInitWVRefMakeOneHotVectors = assert (allExactlyOne . getSpVs <$> noFailWordVec)
+
+getSpVs :: WordVec -> [SpVector]
+getSpVs = map _wI . HS.elems
+
+allExactlyOne :: [SpVector] -> Bool
+allExactlyOne = getAll . foldMap (All . exactlyOne)
+  where
+    exactlyOne :: SpVector -> Bool
+    exactlyOne spV =
+      let listOfSpV = IntMap.elems spV in
+        length listOfSpV == 1 && head listOfSpV == 1.0

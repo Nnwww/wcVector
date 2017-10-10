@@ -44,4 +44,4 @@ testInitFromFile :: Assertion
 testInitFromFile = assert $ do
   dict@(Dict ents diss _) <- initFromFile =<< noFailParams
   -- print dict
-  return $ HS.size ents /= 0 && HS.size diss /= 0
+  pure $ HS.size ents /= 0 && HS.size diss /= 0

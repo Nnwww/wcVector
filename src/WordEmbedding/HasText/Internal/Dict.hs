@@ -5,7 +5,6 @@ module WordEmbedding.HasText.Internal.Dict where
 
 import qualified Data.Char                           as C
 import           Data.Conduit
-import           Data.Conduit.Binary                 as CB
 import qualified Data.Conduit.Combinators            as CC
 import qualified Data.HashMap.Strict                 as HS
 import qualified Data.Text                           as T

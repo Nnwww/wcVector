@@ -4,10 +4,12 @@ module TestModel where
 import           Control.Exception.Safe
 import           Control.Monad
 import qualified Data.Vector                                   as V
-import qualified Data.IntMap                     as IntMap
+import qualified Data.IntMap                                   as IntMap
+import qualified Data.Set                                      as Set
 import           System.IO                                     as SI
 import           Test.Tasty.HUnit
 import           TestData
+import           WordEmbedding.HasText.Model
 import           WordEmbedding.HasText.Internal.Dict
 import           WordEmbedding.HasText.Internal.Type
 import           WordEmbedding.HasText.Internal.Strict.Model
@@ -22,18 +24,14 @@ testComputeHidden step = do
       (dic, wvRef) <- getData arg
       step $ "get a line sentence"
       line <- V.map _eWord <$> getLineLoopWithoutDiscards inputPath dic
-      step $ "1024byte from text8_1m's head: " ++ show line
-      step $ "line length: " ++ show (length line)
-      Weights weight <- computeHidden wvRef dic (V.toList line) ("english") -- There is "english" in text8_1m's head
+      let noDupList = Set.toList . Set.fromList . V.toList $ line
+      Weights weight <- computeHidden wvRef dic noDupList ("word") -- There is "word" in the head 1024byte of text8
       let numOfElemTo2 = length . filter (\e -> 1.0 < e) . IntMap.elems $ weight
-      step $ "weight length: " ++ show (length weight)
-      assertBool "The length of input line is equal to weight dim" $ length line == length weight
-      assertBool "The number of elements to be 2 is just one" $ numOfElemTo2 == 1
-      -- step $ "result of computeHidden" ++ show weight
-
+      assertEqual "The length of input line removed duplication is equal to weight dim" (length noDupList) (length weight)
+      assertEqual "The number of elements to be 2 is just one" 1 numOfElemTo2
 
 getLineLoopWithoutDiscards :: Handle -> Dict -> IO (V.Vector Entry)
-getLineLoopWithoutDiscards hand dict@Dict{_discards = dis} = do
+getLineLoopWithoutDiscards hand dict = do
   isE <- SI.hIsEOF hand
   when isE $ SI.hSeek hand SI.AbsoluteSeek 0
   unsafeGetLine hand dict $ const (pure True)

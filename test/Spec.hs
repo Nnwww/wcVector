@@ -16,19 +16,19 @@ import           WordEmbedding.HasText.Args
 import           WordEmbedding.HasText
 import           WordEmbedding.HasText.Internal.Type
 
-normalUseCase :: Word -> T.Text -> IO HasTextArgs -> ((String -> IO ()) -> Assertion)
-normalUseCase topn posWord args step = do
+normalUseCase :: Word -> [T.Text] -> [T.Text] -> IO HasTextArgs -> ((String -> IO ()) -> Assertion)
+normalUseCase topn posWords negWords args step = do
   a@HasTextArgs{_input = i, _output = o} <- args
   step $ "input path: "  <> i
   step $ "output path: " <> o
   step "Running train"
   w <- train a
-  step "Show Entries:"
-  step . show . _entries $ htDict w
-  step "Show WordVec:"
-  step . show $ htWordVec w
+  -- step "Show Entries:"
+  -- step . show . _entries $ htDict w
+  -- step "Show WordVec:"
+  -- step . show $ htWordVec w
   step "Running mostSim"
-  let Right r = mostSimilarN w topn [posWord] []
+  let Right r = mostSimilarN w topn posWords negWords
   step ("Top " <> show topn <> " of mostSimilar: " <> show r)
   step "Running saveModel"
   saveModel w
@@ -56,8 +56,8 @@ unitTests = testGroup "Unit tests"
             , testCase "(wordsFromFile addEntries) collect entries from file" $ testCollectFromFile
             , testCase "testInitFromFile is non zero" $ testInitFromFile
             , testCase "initWVRef make one-hot vectors" $ testInitWVRefMakeOneHotVectors
+            , testCase "testUnsafeWindowRange" $ testUnsafeWindowRange
             , testCaseSteps "computeHidden" $ testComputeHidden
-            , testCaseSteps "A series of Hastext's operations is not fail (on multi thread)"
-              (normalUseCase 10 "a" noFailOnMultiThreadParams)
-            , testCaseSteps "Hastext run on text8" (normalUseCase 10 "english" text8_1mRunParams)
+            -- , testCaseSteps "Hastext run on text8_1m" (normalUseCase 10 ["word"] [] text8_1mRunParams)
+            , testCaseSteps "Hastext run on text8" (normalUseCase 10 ["king", "woman"] ["man"] text8RunParams)
             ]

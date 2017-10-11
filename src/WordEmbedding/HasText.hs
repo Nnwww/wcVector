@@ -60,15 +60,15 @@ instance B.Binary HasTextResult where
 
 skipgram :: V.Vector T.Text -> Model
 skipgram line = forM_ [0..V.length line - 1] $ \idx -> do
-  (Params{_args = a}, lp) <- ask
-  mapM_ (learn $ V.unsafeIndex line idx) =<< liftIO (unsafeWindowRange a lp line idx)
+  (Params{_args = a}, _) <- ask
+  mapM_ (learn $ V.unsafeIndex line idx) (unsafeWindow a line idx)
   where
     learn input target = updateModel [input] target
 
 cbow :: V.Vector T.Text -> Model
 cbow line = forM_ [0..V.length line - 1] $ \idx -> do
-  (a, lp) <- asks $ first _args
-  updateRange <- liftIO $ unsafeWindowRange a lp line idx
+  (a, _) <- asks $ first _args
+  let updateRange = unsafeWindow a line idx
   updateModel (V.toList updateRange) (V.unsafeIndex line idx)
 
 -- TODO: compare parallelization using MVar with one using ParIO etc.
@@ -86,7 +86,7 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
     trainMain :: RM.GenIO -> SI.Handle -> IO ()
     trainMain rand h = do
       size <- SI.hFileSize h
-      SI.hSeek h SI.AbsoluteSeek $ size * threadNo `quot` (fromIntegral $ _threads args)
+      SI.hSeek h SI.AbsoluteSeek $ size * threadNo `quot` fromIntegral (_threads args)
       let trainUntilCountUpTokens !localTC oldLParams@LParams{_lr = oldLR} = do
             tokenCount <- atomicModifyRef' tcRef (\tc -> (tc,fromIntegral tc))
             if allTokens < tokenCount then return ()
@@ -105,7 +105,7 @@ trainThread params@Params{_args = args, _dict = dict, _tokenCountRef = tcRef, _p
       | localTokenCount <= _lrUpdateTokens args = return localTokenCount
       | otherwise = do
          atomicModifyRef' tcRef $ (,()) . (+ localTokenCount)
-         logger $ localTokenCount
+         logger localTokenCount
          pure 0
 
 
@@ -131,7 +131,7 @@ train args = do
       , htWordVec   = immWordVec
       }
   where
-    check = validArgs args >>= (flip unless) (throwString "Error: Invalid Arguments.")
+    check = validArgs args >>= flip unless (throwString "Error: Invalid Arguments.")
 
     switchLoggingFunction dict
       | _verbose args == 0 = \run -> run (const $ pure ())
@@ -160,8 +160,8 @@ mostSimilar :: HasTextResult
             -> [T.Text] -- ^ negative words
             -> Either ErrMostSim [(T.Text, Double)]
 mostSimilar HasTextResult{htWordVec = wv} from to positives negatives
-  | length positives == 0 && length negatives == 0 = Left EmptyInput
-  | length absPoss   /= 0 || length absNegs   /= 0 = Left $ AbsenceOfWords absPoss absNegs
+  | null positives && null negatives = Left EmptyInput
+  | not (null absPoss) || not (null absNegs) = Left $ AbsenceOfWords absPoss absNegs
   | otherwise = Right . slice from to $ V.toList sortedCosSims
   where
     sortedCosSims = runST $ do

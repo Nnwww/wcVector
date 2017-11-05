@@ -59,11 +59,13 @@ instance B.Binary HasTextResult where
   put HasTextResult{htArgs = a, htDict = d, htWordVec = w} = B.put a >> B.put d >> B.put w
 
 skipgram :: V.Vector T.Text -> Model
-skipgram line = forM_ [0..V.length line - 1] $ \idx -> do
-  (Params{_args = a}, _) <- ask
-  mapM_ (learn $ V.unsafeIndex line idx) (unsafeWindow a line idx)
-  where
-    learn input target = updateModel [input] target
+skipgram = undefined
+-- skipgram :: V.Vector T.Text -> Model
+-- skipgram line = forM_ [0..V.length line - 1] $ \idx -> do
+--   (Params{_args = a}, _) <- ask
+--   mapM_ (learn $ V.unsafeIndex line idx) (unsafeWindow a line idx)
+--   where
+--     learn input target = updateModel [input] target
 
 cbow :: V.Vector T.Text -> Model
 cbow line = forM_ [0..V.length line - 1] $ \idx -> do
@@ -168,26 +170,25 @@ mostSimilar HasTextResult{htWordVec = wv} from to positives negatives
       cosSimVecs <- V.unsafeThaw . V.map (second $ cosSim mean . _wI) . V.fromList $ HS.toList wv
       VA.sortBy (flip $ comparing snd) cosSimVecs
       V.unsafeFreeze cosSimVecs
-    mean         = scale (1 / inputLength) $ foldr1 plus scaledInputs
-    scaledInputs = map getPosScale positives <> map getNegScale negatives
-    absPoss      = absentWords positives
-    absNegs      = absentWords negatives
-    absentWords  = filter (not . flip HS.member wv)
-    inputLength  = fromIntegral $ (length positives) + (length negatives)
-    getPosScale  = getVec
-    getNegScale  = scale (-1) . getVec
-    getVec       = _wI . (wv HS.!)
-    slice f t xs = fst $ splitAt (stop - start) (snd $ splitAt start xs)
-      where
-        start = fromIntegral f
-        stop  = fromIntegral t
+    mean = let inputLength  = fromIntegral $ (length positives) + (length negatives)
+               limXLogOneXth x = if x == 0 then 0 else  x * log (1 / x)
+               getVec = IntMap.map limXLogOneXth . _wI . (wv HS.!)
+               getPosScale  = getVec
+               getNegScale  = scale (-1) . getVec
+               scaledInputs = map getPosScale positives <> map getNegScale negatives
+           in scale (1 / inputLength) $ foldr1 plus scaledInputs
+    (absPoss, absNegs) = let absentWords = filter (not . flip HS.member wv)
+                         in (absentWords positives, absentWords negatives)
+    slice from' to' xs = let start = fromIntegral from'
+                             stop  = fromIntegral to'
+                         in fst $ splitAt (stop - start) (snd $ splitAt start xs)
 
 -- | Such synonym of mostSimilar as it return from 0 to top N.
 mostSimilarN :: HasTextResult
-            -> Word     -- ^ top N
-            -> [T.Text] -- ^ positive words
-            -> [T.Text] -- ^ negative words
-            -> Either ErrMostSim [(T.Text, Double)]
+             -> Word     -- ^ top N
+             -> [T.Text] -- ^ positive words
+             -> [T.Text] -- ^ negative words
+             -> Either ErrMostSim [(T.Text, Double)]
 mostSimilarN w topn positives negatives = mostSimilar w 0 topn positives negatives
 
 -- | This function save a trained data, but you don't have to use this because this is essentially a wrapper function of Binary package at present.

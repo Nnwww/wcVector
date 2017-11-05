@@ -152,6 +152,7 @@ train args = do
 
 data ErrMostSim = EmptyInput
                 | AbsenceOfWords {absPosW :: [T.Text], negPosW :: [T.Text]}
+                deriving (Show)
                 -- ^ words that do not exist in trained corpora when execute mostSimilar.
 
 -- | Get a most similar word list. Note that the result list is a delayed version of the entire dictionary.

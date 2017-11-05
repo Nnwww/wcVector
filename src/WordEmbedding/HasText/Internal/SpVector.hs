@@ -5,6 +5,7 @@ module WordEmbedding.HasText.Internal.SpVector
   , dot
   , unitVector
   , cosSim
+  , fromList
   )
 where
 
@@ -31,3 +32,6 @@ unitVector v = scale (1 / norm2 v) v
 
 cosSim :: SpVector -> SpVector -> Double
 cosSim nume deno = dot (unitVector nume) (unitVector deno)
+
+fromList :: [(Int, Double)] -> SpVector
+fromList = IntMap.fromList

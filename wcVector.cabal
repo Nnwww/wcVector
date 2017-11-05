@@ -149,6 +149,8 @@ test-suite spec
       TestDict
       TestData
       TestModel
+      TestSpVector
+      TestHasText
       TestHasTextInternal
   default-language: Haskell2010
 

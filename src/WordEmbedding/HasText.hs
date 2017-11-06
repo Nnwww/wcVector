@@ -39,11 +39,13 @@ import qualified System.IO                                     as SI
 import qualified System.ProgressBar                            as P
 import qualified System.Random.MWC                             as RM
 import           TextShow
+import           Debug.Trace
+
 import           WordEmbedding.HasText.Args
 import           WordEmbedding.HasText.Dict
 import           WordEmbedding.HasText.Internal.Strict.HasText
 import           WordEmbedding.HasText.Internal.Type           (HasTextResult (..))
-import           WordEmbedding.HasText.Internal.SpVector
+import qualified WordEmbedding.HasText.Internal.SpVector as SV
 import           WordEmbedding.HasText.Model
 
 instance B.Binary HasTextResult where
@@ -164,22 +166,23 @@ mostSimilar :: HasTextResult
             -> Either ErrMostSim [(T.Text, Double)]
 mostSimilar HasTextResult{htWordVec = wv} from to positives negatives
   | null positives && null negatives = Left EmptyInput
-  | not (null absPoss) || not (null absNegs) = Left $ AbsenceOfWords absPoss absNegs
+  | not (null absentPoss) || not (null absentNegs) = Left $ AbsenceOfWords absentPoss absentNegs
   | otherwise = Right . slice from to $ V.toList sortedCosSims
   where
     sortedCosSims = runST $ do
-      cosSimVecs <- V.unsafeThaw . V.map (second $ cosSim mean . _wI) . V.fromList $ HS.toList wv
+      cosSimVecs <- V.unsafeThaw . V.map (second $ SV.cosSim mean . divergenceWI) . V.fromList $ HS.toList wv
       VA.sortBy (flip $ comparing snd) cosSimVecs
       V.unsafeFreeze cosSimVecs
     mean = let inputLength  = fromIntegral $ (length positives) + (length negatives)
-               limXLogOneXth x = if x == 0 then 0 else  x * log (1 / x)
-               getVec = IntMap.map limXLogOneXth . _wI . (wv HS.!)
+               getVec       = divergenceWI . (wv HS.!)
                getPosScale  = getVec
-               getNegScale  = scale (-1) . getVec
+               getNegScale  = SV.scale (-1) . getVec
                scaledInputs = map getPosScale positives <> map getNegScale negatives
-           in scale (1 / inputLength) $ foldr1 plus scaledInputs
-    (absPoss, absNegs) = let absentWords = filter (not . flip HS.member wv)
-                         in (absentWords positives, absentWords negatives)
+               sumInputs    = foldr1 SV.plus scaledInputs
+           in SV.scale (1 / inputLength) sumInputs
+    divergenceWI = SV.map SV.limXLogOneXth . _wI
+    (absentPoss, absentNegs) = let absentWords = filter (not . flip HS.member wv)
+                               in (absentWords positives, absentWords negatives)
     slice from' to' xs = let start = fromIntegral from'
                              stop  = fromIntegral to'
                          in fst $ splitAt (stop - start) (snd $ splitAt start xs)

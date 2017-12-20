@@ -10,7 +10,10 @@ import           TestHasText
 import           TestHasTextInternal
 import           TestSpVector
 
+import           WordEmbedding.HasText.Args
+import           WordEmbedding.HasText
 import           WordEmbedding.HasText.Internal.Type
+
 
 main :: IO ()
 main = defaultMain tests
@@ -31,8 +34,7 @@ unitTests = testGroup "Unit tests"
             , testCase "SpVector's scale is vaild" $ testScale
             , testCase "SpVector's plus is vaild" $ testPlus
             , testCase "SpVector's dot is vaild" $ testDot
-            , testCase "SpVector's cosine similarity is vaild" $ testCosSim
             -- , testCaseSteps "Hastext run on text8_1m" (normalUseCase 10 ["word"] [] text8_1mRunParams)
             , testCaseSteps "Hastext run on text8" (normalUseCase 10 ["king", "woman"] ["man"]
-                                                    ((\arg -> arg{_minCount=5}) <$> text8RunParams))
+                                                    ((\arg -> arg{_minCount=100}) <$> text8RunParams))
             ]
